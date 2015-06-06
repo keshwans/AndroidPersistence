@@ -10,7 +10,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,10 +30,11 @@ public class MainActivity_internal_storage extends ActionBarActivity {
     private Button mCreateUser;
     private TextView mTvUserCount;
     private int mUserCount;
-    private List<User> userList = null;
+    private List<User> mUserList = null;
     private SharedPreferences mSharedPreferences;
     public static final String PREFERENCE_FILE = "org.c4q.androidPersistence_3";
     public static final String PREF_KEY_USER_COUNT = "user_count";
+    public static final String INTERNAL_USER_LIST_FILE = "org.c4q.internal_list";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,11 +42,12 @@ public class MainActivity_internal_storage extends ActionBarActivity {
 
         mSharedPreferences = this.getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE);
 
-        restoreDataFromSharedPref();
+        initializeData();
+
+        // restoreDataFromSharedPref();
+        restoreUserListFromInternalStorage();
 
         setContentView(R.layout.activity_main);
-
-        initializeData();
 
         intializeViews();
     }
@@ -45,9 +55,6 @@ public class MainActivity_internal_storage extends ActionBarActivity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-//        saveDataToBundle(outState);
-
-
     }
 
     @Override
@@ -63,8 +70,39 @@ public class MainActivity_internal_storage extends ActionBarActivity {
     }
 
     private void saveUserListToInternalStorage() {
-
+        try {
+            FileOutputStream fos = this.openFileOutput(INTERNAL_USER_LIST_FILE, Context.MODE_PRIVATE);
+            ObjectOutputStream os = new ObjectOutputStream(fos);
+            os.writeObject(mUserList);
+            fos.close();
+            os.close();
+        } catch (Exception ex) {
+            Toast.makeText(this, "error: " + ex.getMessage(), Toast.LENGTH_LONG).show();
+            ex.printStackTrace();
+        }
     }
+
+    private void restoreUserListFromInternalStorage() {
+        FileInputStream fis = null;
+        try {
+            fis = this.openFileInput(INTERNAL_USER_LIST_FILE);
+            ObjectInputStream ois = new ObjectInputStream ( fis );
+            mUserList = ( ArrayList<User> ) ois.readObject ();
+            mUserCount = mUserList.size();
+            ois.close ();
+            return;
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (StreamCorruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void restoreDataFromSharedPref() {
         mUserCount = mSharedPreferences.getInt(PREF_KEY_USER_COUNT, 0);
     }
@@ -73,11 +111,10 @@ public class MainActivity_internal_storage extends ActionBarActivity {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putInt(PREF_KEY_USER_COUNT, mUserCount);
         editor.commit();
-
     }
 
     private void initializeData() {
-        userList = new ArrayList<>();
+        mUserList = new ArrayList<>();
     }
 
     private void intializeViews() {
@@ -104,11 +141,12 @@ public class MainActivity_internal_storage extends ActionBarActivity {
                 int age = Integer.parseInt(String.valueOf(mAge.getText())); // another way to get string from EditText
 
                 User newUser = new User(username, age);
-                userList.add(newUser);
+                mUserList.add(newUser);
                 mUserCount++;
                 mTvUserCount.setText(mUserCount + "");
 
-                saveDataToSharedPref();
+                //saveDataToSharedPref();
+                saveUserListToInternalStorage();
 
             }
         });
