@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -71,8 +72,14 @@ public class MainActivity_internal_storage extends ActionBarActivity {
 
     private void saveUserListToInternalStorage() {
         try {
+            //Android has two methods to create internal storage
             FileOutputStream fos = this.openFileOutput(INTERNAL_USER_LIST_FILE, Context.MODE_PRIVATE);
             ObjectOutputStream os = new ObjectOutputStream(fos);
+
+            //we could also use this alternate api for internal files
+           // File file = new File(getFilesDir(), INTERNAL_USER_LIST_FILE);
+           // FileOutputStream fos = new FileOutputStream(file);
+
             os.writeObject(mUserList);
             fos.close();
             os.close();
